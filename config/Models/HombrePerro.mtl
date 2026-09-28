@@ -1,0 +1,181 @@
+# Materiales de HombrePerro (texturas repetibles + colores planos)
+
+newmtl Colores
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.05 0.05 0.05
+Ns 20
+d 1
+illum 2
+map_Kd Texture_albedo.png
+
+newmtl Ladrillo_rojo
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.05 0.05 0.05
+Ns 10
+d 1
+illum 2
+map_Kd Ladrillo_rojo.png
+map_Bump -bm 0.8 Ladrillo_rojo_bump.png
+
+newmtl Ladrillo_oscuro
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.05 0.05 0.05
+Ns 10
+d 1
+illum 2
+map_Kd Ladrillo_oscuro.png
+map_Bump -bm 0.8 Ladrillo_oscuro_bump.png
+
+newmtl Acera_piedra
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.08 0.08 0.08
+Ns 15
+d 1
+illum 2
+map_Kd Acera_piedra.png
+map_Bump -bm 0.8 Acera_piedra_bump.png
+
+newmtl Arena
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.0 0.0 0.0
+Ns 5
+d 1
+illum 2
+map_Kd Arena.png
+map_Bump -bm 0.8 Arena_bump.png
+
+newmtl Tela_tank
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.0 0.0 0.0
+Ns 5
+d 1
+illum 2
+map_Kd Tela_negra.png
+map_Bump -bm 0.8 Tela_negra_bump.png
+
+newmtl Tela_gorra
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.0 0.0 0.0
+Ns 5
+d 1
+illum 2
+map_Kd Tela_azul.png
+map_Bump -bm 0.8 Tela_azul_bump.png
+
+newmtl Tela_short
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.05 0.05 0.05
+Ns 8
+d 1
+illum 2
+map_Kd Tela_short.png
+map_Bump -bm 0.8 Tela_short_bump.png
+
+newmtl Toalla_algodon
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.0 0.0 0.0
+Ns 5
+d 1
+illum 2
+map_Kd Toalla.png
+map_Bump -bm 0.8 Toalla_bump.png
+
+newmtl Pelo_perro
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.1 0.1 0.1
+Ns 12
+d 1
+illum 2
+map_Kd Pelo.png
+map_Bump -bm 0.8 Pelo_bump.png
+
+newmtl Pelo_perro_oscuro
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.08 0.08 0.08
+Ns 12
+d 1
+illum 2
+map_Kd Pelo_oscuro.png
+map_Bump -bm 0.8 Pelo_oscuro_bump.png
+
+newmtl Cuero
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.3 0.3 0.3
+Ns 30
+d 1
+illum 2
+map_Kd Cuero.png
+map_Bump -bm 0.8 Cuero_bump.png
+
+newmtl Corteza_palmera
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.0 0.0 0.0
+Ns 5
+d 1
+illum 2
+map_Kd Tronco.png
+map_Bump -bm 0.8 Tronco_bump.png
+
+newmtl Hojas_palmera
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.1 0.1 0.1
+Ns 15
+d 1
+illum 2
+map_Kd Hojas.png
+
+newmtl Pared_diorama
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.02 0.02 0.02
+Ns 5
+d 1
+illum 2
+map_Kd Pared_amarilla.png
+
+newmtl Metal
+Ka 1 1 1
+Kd 0.16 0.16 0.19
+Ks 0.7 0.7 0.7
+Ns 80
+d 1
+illum 2
+
+newmtl Vidrio
+Ka 1 1 1
+Kd 0.97 0.9 0.58
+Ks 0.6 0.6 0.6
+Ns 120
+d 1
+illum 2
+
+newmtl Pantalla
+Ka 1 1 1
+Kd 0.04 0.07 0.13
+Ks 0.85 0.85 0.85
+Ns 160
+d 1
+illum 2
+
+newmtl Lente
+Ka 1 1 1
+Kd 0.02 0.02 0.05
+Ks 0.9 0.9 0.9
+Ns 200
+d 1
+illum 2
+
