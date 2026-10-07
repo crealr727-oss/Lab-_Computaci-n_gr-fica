@@ -1,0 +1,8 @@
+newmtl carro_mat
+Ns 32
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.25 0.25 0.25
+d 1
+illum 2
+map_Kd car_texture.png

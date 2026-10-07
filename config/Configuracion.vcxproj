@@ -135,15 +135,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="Shader\modelLoading.frag" />
-    <None Include="Shader\modelLoading.vs" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Carga de Modelos.cpp" />
+    <None Include="Shader\lamp.frag" />
+    <None Include="Shader\lamp.vs" />
+    <None Include="Shader\lighting.frag" />
+    <None Include="Shader\lighting.vs" />
+    <None Include="Shader\modelLoading.frag" />
+    <None Include="Shader\modelLoading.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Iluminacion.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

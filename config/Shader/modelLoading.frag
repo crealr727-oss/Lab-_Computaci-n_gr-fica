@@ -1,43 +1,51 @@
 #version 330 core
 
+struct Material
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+};
+
+struct Light
+{
+    vec3 position;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoords;
+out vec4 color;
 
-out vec4 FragColor;
-
-struct Material
-{
-    vec3  diffuse;    // Kd
-    vec3  specular;   // Ks
-    float shininess;  // Ns
-};
-
-uniform Material  material;
-uniform bool      useTexture;
-uniform sampler2D texture_diffuse1;
-
-uniform vec3 lightDir;   // direccion HACIA la luz
 uniform vec3 viewPos;
+uniform Material material;
+uniform Light light;
+uniform sampler2D texture_diffuse1;
+uniform int hasTexture;
 
 void main()
 {
-    // Color base: textura * Kd (Kd=1 en materiales con textura) o solo Kd
-    vec3 albedo = material.diffuse;
-    if (useTexture)
-        albedo *= texture(texture_diffuse1, TexCoords).rgb;
+    // Color base: textura del carro (o blanco si la malla no tiene textura)
+    vec3 base = (hasTexture == 1) ? texture(texture_diffuse1, TexCoords).rgb : vec3(1.0f);
 
-    // Las paredes del diorama son planos: iluminar por ambos lados
-    vec3 N = normalize(Normal);
-    if (!gl_FrontFacing) N = -N;
+    // Ambiental
+    vec3 ambient = light.ambient * material.ambient * base;
 
-    vec3 L = normalize(lightDir);
-    vec3 V = normalize(viewPos - FragPos);
-    vec3 H = normalize(L + V);
+    // Difusa
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(light.position - FragPos);
+    float diff = max(dot(norm, lightDir), 0.0f);
+    vec3 diffuse = light.diffuse * diff * material.diffuse * base;
 
-    vec3 ambient  = 0.40 * albedo;
-    vec3 diffuse  = 0.75 * max(dot(N, L), 0.0) * albedo;
-    vec3 specular = pow(max(dot(N, H), 0.0), material.shininess) * material.specular;
+    // Especular
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
+    vec3 specular = light.specular * spec * material.specular;
 
-    FragColor = vec4(ambient + diffuse + specular, 1.0);
+    color = vec4(ambient + diffuse + specular, 1.0f);
 }
