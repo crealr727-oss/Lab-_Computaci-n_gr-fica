@@ -1,0 +1,18 @@
+# Materiales del Sol
+newmtl sol_mat
+Ka 1.00 0.60 0.10
+Kd 1.00 1.00 1.00
+Ks 0.00 0.00 0.00
+Ke 1.00 0.55 0.05
+d 1.0
+illum 1
+map_Kd sol_textura.png
+
+newmtl sol_rayos_mat
+Ka 1.00 0.35 0.05
+Kd 1.00 0.38 0.06
+Ks 0.00 0.00 0.00
+Ke 0.90 0.25 0.03
+d 1.0
+illum 1
+map_Kd sol_rayos.png

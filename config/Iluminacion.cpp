@@ -1,285 +1,486 @@
-//Previo 8// 
-// Rea Alberto Cristian // 
-// numero de cuenta : 318273130 //
-//Fecha de entrega 6 de octubre del 2026//
+//Practica 8                                 Rea Alberto Cristian
+//Fecha de entrega:11 de octubre del 2026              318273130
+#include <string>
 #include <iostream>
 #include <cmath>
+#include <cstdlib>
 
-// GLEW
 #include <GL/glew.h>
-
-// GLFW
 #include <GLFW/glfw3.h>
 
-// GLM Mathematics (radianes forzados: funciona igual en versiones viejas y nuevas de GLM)
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-// Other includes
 #include "Shader.h"
 #include "Camera.h"
 #include "Model.h"
 
-// Prototipos
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void MouseCallback(GLFWwindow *window, double xPos, double yPos);
-void DoMovement();
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/constants.hpp>
 
-// ---- Configuración del modelo (cambia aquí la ruta si mueves los archivos) ----
-const char *MODEL_PATH = "Models/carro.obj";   // junto a carro.mtl y car_texture.png
-const float MODEL_FIT_SIZE = 2.0f;                    // el carro se escala para caber en un cubo de este tamaño
+#include "SOIL2/SOIL2.h"
+#include "stb_image.h"
 
-// Window dimensions
-const GLuint WIDTH = 800, HEIGHT = 600;
+const GLuint WIDTH = 800;
+const GLuint HEIGHT = 600;
+
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 
-// Camera
-Camera camera(glm::vec3(0.0f, 0.6f, 4.0f));
-GLfloat lastX = WIDTH / 2.0;
-GLfloat lastY = HEIGHT / 2.0;
+void KeyCallback(GLFWwindow* window, int key, int scancode,
+    int action, int mode);
+
+void MouseCallback(GLFWwindow* window, double xPos, double yPos);
+
+void DoMovement();
+
+// CAMBIO: la camara se aleja (z = 14) para ver completa la orbita del Sol y la Luna.
+Camera camera(glm::vec3(0.0f, 1.0f, 14.0f));
+
 bool keys[1024];
+
+GLfloat lastX = 400.0f;
+GLfloat lastY = 300.0f;
+
 bool firstMouse = true;
 
-// Luz (la lámpara) y estado
-glm::vec3 lightPos(1.6f, 1.0f, 1.8f);
-bool animateLightColor = false;
-bool autoRotate = false;
-float carAngle = glm::radians(35.0f);   // vista inicial 3/4 para ver frente y costado
+// Animación
 
-// Materiales de la práctica (teclas 1, 2, 3)
-struct MaterialDef { const char *name; glm::vec3 ambient, diffuse, specular; float shininess; };
-MaterialDef materials[] =
-{
-	{ "Pintura brillante", glm::vec3(0.60f), glm::vec3(0.90f), glm::vec3(0.90f),  64.0f },
-	{ "Mate (sin brillo)", glm::vec3(0.60f), glm::vec3(0.90f), glm::vec3(0.05f),   4.0f },
-	{ "Metalico",          glm::vec3(0.40f), glm::vec3(0.55f), glm::vec3(1.00f), 128.0f },
-};
-int currentMaterial = 0;
-
-// Deltatime
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
+// Angulo de la orbita, en radianes.
+float rot = 0.0f;
+
+// R inicia y detiene la animacion.
+bool activanim = false;
+
+// 1 = Sol, 2 = Luna.
+int luzActiva = 1;
+
+// ============================================================
+// CONFIGURACION DE LA ORBITA
+// ============================================================
+
+// Radio de la trayectoria.
+const float radioOrbita = 5.0f;
+
+// Centro de la trayectoria.
+const float centroX = 0.0f;
+const float centroY = 1.0f;
+
+// Profundidad de los modelos.
+const float alturaZ = 0.0f;
+
+// Velocidad angular: 15 grados por segundo.
+const float velocidadAngular = glm::radians(30.0f);
+
+// Escalas (CAMBIO): escena del hombre con el perro y astros.
+const float escalaEscena = 2.0f;
+const float escalaAstros = 1.5f;
+
+// FUNCION PRINCIPAL
+
 int main()
 {
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "previo 8 -Cristian Rea Alberto", nullptr, nullptr);
-	if (nullptr == window)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
-		return EXIT_FAILURE;
-	}
+    // INICIALIZAR GLFW
+    if (!glfwInit())
+    {
+        std::cout << "Error al inicializar GLFW" << std::endl;
+        return EXIT_FAILURE;
+    }
 
-	glfwMakeContextCurrent(window);
-	glfwGetFramebufferSize(window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-	glfwSetKeyCallback(window, KeyCallback);
-	glfwSetCursorPosCallback(window, MouseCallback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwWindowHint(
+        GLFW_OPENGL_PROFILE,
+        GLFW_OPENGL_CORE_PROFILE
+    );
 
-	glewExperimental = GL_TRUE;
-	if (GLEW_OK != glewInit())
-	{
-		std::cout << "Failed to initialize GLEW" << std::endl;
-		return EXIT_FAILURE;
-	}
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-	glEnable(GL_DEPTH_TEST);
+    GLFWwindow* window = glfwCreateWindow(
+        WIDTH,
+        HEIGHT,
+        "Practica8 Cristian Rea Alberto",
+        nullptr,
+        nullptr
+    );
 
-	Shader shader("Shader/modelLoading.vs", "Shader/modelLoading.frag");
-	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
-	Model carro((GLchar *)MODEL_PATH);
+    if (window == nullptr)
+    {
+        std::cout << "Error al crear la ventana" << std::endl;
+        glfwTerminate();
+        return EXIT_FAILURE;
+    }
 
-	if (carro.GetSize().x < 0.0f)   // sin vértices: el tamaño sale -inf
-	{
-		std::cout << "No se cargo el modelo. Revisa MODEL_PATH y el directorio de trabajo." << std::endl;
-		glfwTerminate();
-		return EXIT_FAILURE;
-	}
+    glfwMakeContextCurrent(window);
 
-	// ---- Cubo de la lámpara (solo posiciones) ----
-	GLfloat cubeVertices[] =
-	{
-		-0.5f, -0.5f, -0.5f,   0.5f, -0.5f, -0.5f,   0.5f,  0.5f, -0.5f,  -0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,   0.5f, -0.5f,  0.5f,   0.5f,  0.5f,  0.5f,  -0.5f,  0.5f,  0.5f
-	};
-	GLuint cubeIndices[] =
-	{
-		0,1,2, 2,3,0,   // atrás
-		4,5,6, 6,7,4,   // frente
-		0,4,7, 7,3,0,   // izquierda
-		1,5,6, 6,2,1,   // derecha
-		0,1,5, 5,4,0,   // abajo
-		3,2,6, 6,7,3    // arriba
-	};
-	GLuint lampVAO, lampVBO, lampEBO;
-	glGenVertexArrays(1, &lampVAO);
-	glGenBuffers(1, &lampVBO);
-	glGenBuffers(1, &lampEBO);
-	glBindVertexArray(lampVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, lampVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lampEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid *)0);
-	glEnableVertexAttribArray(0);
-	glBindVertexArray(0);
+    glfwGetFramebufferSize(
+        window,
+        &SCREEN_WIDTH,
+        &SCREEN_HEIGHT
+    );
 
-	// ---- Ajuste automático al modelo: centrar en el origen y escalar a MODEL_FIT_SIZE ----
-	glm::vec3 center = carro.GetCenter();
-	glm::vec3 size = carro.GetSize();
-	float maxDim = glm::max(size.x, glm::max(size.y, size.z));
-	float fit = (maxDim > 0.0f) ? (MODEL_FIT_SIZE / maxDim) : 1.0f;
+    // REGISTRAR EVENTOS
+    glfwSetKeyCallback(window, KeyCallback);
+    glfwSetCursorPosCallback(window, MouseCallback);
 
-	std::cout << "Controles: WASD/flechas mover camara, mouse mirar, ESC salir" << std::endl;
-	std::cout << "  I/K/J/L/U/O mover la lampara (z-/z+/x-/x+/y+/y-)" << std::endl;
-	std::cout << "  1/2/3 cambiar material, ESPACIO color animado de la luz, R girar el carro" << std::endl;
-	std::cout << "Material: " << materials[currentMaterial].name << std::endl;
+    // INICIALIZAR GLEW
+    glewExperimental = GL_TRUE;
 
-	glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
+    if (glewInit() != GLEW_OK)
+    {
+        std::cout << "Error al inicializar GLEW" << std::endl;
 
-	while (!glfwWindowShouldClose(window))
-	{
-		GLfloat currentFrame = (GLfloat)glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
+        glfwTerminate();
+        return EXIT_FAILURE;
+    }
 
-		glfwPollEvents();
-		DoMovement();
-		if (autoRotate) carAngle += glm::radians(30.0f) * deltaTime;
+    // CONFIGURAR OPENGL
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-		// Fondo negro, como en el ejemplo
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
 
-		// Color de la luz (blanco, o animado con ESPACIO)
-		glm::vec3 lightColor(1.0f);
-		if (animateLightColor)
-		{
-			float t = (float)glfwGetTime();
-			lightColor = glm::vec3(0.6f + 0.4f * sin(t * 2.0f), 0.6f + 0.4f * sin(t * 0.7f), 0.6f + 0.4f * sin(t * 1.3f));
-		}
+    // CARGAR SHADERS
+    Shader shader(
+        "Shader/modelLoading.vs",
+        "Shader/modelLoading.frag"
+    );
 
-		glm::mat4 view = camera.GetViewMatrix();
-		glm::vec3 viewPos = glm::vec3(glm::inverse(view)[3]);   // posición de la cámara
+    Shader lightingShader(
+        "Shader/lighting.vs",
+        "Shader/lighting.frag"
+    );
 
-		// ================= CARRO (iluminado) =================
-		shader.Use();
-		glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-		glUniform3f(glGetUniformLocation(shader.Program, "viewPos"), viewPos.x, viewPos.y, viewPos.z);
+    // CARGAR MODELOS
+    // CAMBIO: se elimino el perro y el aparador; ahora la escena es HombrePerro.obj
+    Model escena((char*)"Models/HombrePerro.obj");
 
-		// Luz
-		glUniform3f(glGetUniformLocation(shader.Program, "light.position"), lightPos.x, lightPos.y, lightPos.z);
-		glUniform3f(glGetUniformLocation(shader.Program, "light.ambient"), lightColor.x * 0.25f, lightColor.y * 0.25f, lightColor.z * 0.25f);
-		glUniform3f(glGetUniformLocation(shader.Program, "light.diffuse"), lightColor.x * 0.90f, lightColor.y * 0.90f, lightColor.z * 0.90f);
-		glUniform3f(glGetUniformLocation(shader.Program, "light.specular"), lightColor.x, lightColor.y, lightColor.z);
+    Model sol((char*)"Models/sol.obj");
 
-		// Material
-		const MaterialDef &m = materials[currentMaterial];
-		glUniform3f(glGetUniformLocation(shader.Program, "material.ambient"), m.ambient.x, m.ambient.y, m.ambient.z);
-		glUniform3f(glGetUniformLocation(shader.Program, "material.diffuse"), m.diffuse.x, m.diffuse.y, m.diffuse.z);
-		glUniform3f(glGetUniformLocation(shader.Program, "material.specular"), m.specular.x, m.specular.y, m.specular.z);
-		glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"), m.shininess);
+    Model luna((char*)"Models/luna.obj");
 
-		// Matriz del modelo: escalar -> girar -> mover el centro al origen
-		glm::mat4 model(1.0f);
-		model = glm::rotate(model, carAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(fit));
-		model = glm::translate(model, -center);
-		glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+    // MATRIZ DE PROYECCION
+    glm::mat4 projection = glm::perspective(
+        camera.GetZoom(),
+        (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT,
+        0.1f,
+        100.0f
+    );
 
-		carro.Draw(shader);
+    // VAO Y VBO
+    GLuint VBO, VAO;
 
-		// ================= LÁMPARA (cubo) =================
-		lampShader.Use();
-		glUniformMatrix4fv(glGetUniformLocation(lampShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(lampShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-		glUniform3f(glGetUniformLocation(lampShader.Program, "lampColor"), lightColor.x, lightColor.y, lightColor.z);
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
 
-		glm::mat4 lampModel(1.0f);
-		lampModel = glm::translate(lampModel, lightPos);
-		lampModel = glm::scale(lampModel, glm::vec3(0.2f));
-		glUniformMatrix4fv(glGetUniformLocation(lampShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(lampModel));
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-		glBindVertexArray(lampVAO);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+        6 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
 
-		glfwSwapBuffers(window);
-	}
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+        6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
 
-	glDeleteVertexArrays(1, &lampVAO);
-	glDeleteBuffers(1, &lampVBO);
-	glDeleteBuffers(1, &lampEBO);
-	glfwTerminate();
-	return 0;
+    glBindVertexArray(0);
+
+    // ========================================================
+    // BUCLE PRINCIPAL
+    // ========================================================
+
+    while (!glfwWindowShouldClose(window))
+    {
+        // ACTUALIZAR TIEMPO
+        GLfloat currentFrame = (GLfloat)glfwGetTime();
+
+        deltaTime = currentFrame - lastFrame;
+
+        lastFrame = currentFrame;
+
+        glfwPollEvents();
+
+        DoMovement();
+
+        // ----------------------------------------------------
+        // COLOR DEL CIELO (CAMBIO)
+        // Depende de la altura del Sol: dia azul, noche oscura.
+        // ----------------------------------------------------
+
+        float alturaSol = std::sin(rot);               // 1 = mediodia, -1 = medianoche
+        float t = glm::clamp(alturaSol * 2.0f + 0.5f, 0.0f, 1.0f);
+
+        glm::vec3 cieloNoche(0.02f, 0.03f, 0.10f);
+        glm::vec3 cieloDia(0.53f, 0.75f, 0.95f);
+        glm::vec3 cielo = glm::mix(cieloNoche, cieloDia, t);
+
+        glClearColor(cielo.r, cielo.g, cielo.b, 1.0f);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // ====================================================
+        // CALCULAR POSICIONES DEL SOL Y LA LUNA
+        // ====================================================
+
+        // El Sol recorre la orbita.
+        glm::vec3 posicionSol(
+            centroX + radioOrbita * std::cos(rot),
+            centroY + radioOrbita * std::sin(rot),
+            alturaZ
+        );
+
+        // La Luna se encuentra al lado opuesto del Sol.
+        glm::vec3 posicionLuna(
+            centroX + radioOrbita * std::cos(rot + glm::pi<float>()),
+            centroY + radioOrbita * std::sin(rot + glm::pi<float>()),
+            alturaZ
+        );
+
+        glm::mat4 view = camera.GetViewMatrix();
+
+        // ====================================================
+        // ESCENA ILUMINADA (HOMBRE Y PERRO)
+        // ====================================================
+
+        lightingShader.Use();
+
+        // Posiciones de las luces: Sol (light) y Luna (light2)
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "light.position"),
+            posicionSol.x, posicionSol.y, posicionSol.z);
+
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "light2.position"),
+            posicionLuna.x, posicionLuna.y, posicionLuna.z);
+
+        // Fuente activa.
+        glUniform1i(glGetUniformLocation(lightingShader.Program, "luzActiva"),
+            luzActiva);
+
+        // Camara
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "viewPos"),
+            camera.GetPosition().x,
+            camera.GetPosition().y,
+            camera.GetPosition().z);
+
+        // Luz 1: SOL
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "light.ambient"),
+            0.55f, 0.50f, 0.30f);
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "light.diffuse"),
+            1.0f, 0.80f, 0.30f);
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "light.specular"),
+            0.55f, 0.95f, 0.65f);
+
+        // Luz 2: LUNA
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "light2.ambient"),
+            0.55f, 0.65f, 1.0f);
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "light2.diffuse"),
+            0.55f, 0.65f, 1.0f);
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "light2.specular"),
+            0.55f, 0.65f, 1.0f);
+
+        // Matrices de camara
+        glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "projection"),
+            1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "view"),
+            1, GL_FALSE, glm::value_ptr(view));
+
+        // Material de la escena
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "material.ambient"),
+            0.3f, 0.3f, 0.3f);
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "material.diffuse"),
+            1.0f, 1.0f, 1.0f);
+        glUniform3f(glGetUniformLocation(lightingShader.Program, "material.specular"),
+            0.25f, 0.25f, 0.25f);
+        glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"),
+            32.0f);
+
+        // Modelo: se centra en el origen (su centro en XZ es aprox. (-0.107, -0.493))
+        // y se escala. Las traslaciones se aplican antes que la escala.
+        glm::mat4 modelEscena(1.0f);
+
+        modelEscena = glm::scale(
+            modelEscena,
+            glm::vec3(escalaEscena)
+        );
+
+        modelEscena = glm::translate(
+            modelEscena,
+            glm::vec3(0.107f, 0.0f, 0.493f)
+        );
+
+        glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"),
+            1, GL_FALSE, glm::value_ptr(modelEscena));
+
+        escena.Draw(lightingShader);
+
+        // ====================================================
+        // SOL Y LUNA (sin iluminacion: se ven con su textura)
+        // ====================================================
+
+        shader.Use();
+
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"),
+            1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"),
+            1, GL_FALSE, glm::value_ptr(view));
+
+        // CAMBIO: modelLoading.frag necesita estos uniforms; si no se envian,
+        // todos valen 0 y el Sol y la Luna salen negros.
+        // Solo componente ambiental = 1 -> color final = textura.
+        glUniform3f(glGetUniformLocation(shader.Program, "viewPos"),
+            camera.GetPosition().x,
+            camera.GetPosition().y,
+            camera.GetPosition().z);
+
+        glUniform3f(glGetUniformLocation(shader.Program, "light.position"),
+            0.0f, 0.0f, 0.0f);
+        glUniform3f(glGetUniformLocation(shader.Program, "light.ambient"),
+            1.0f, 1.0f, 1.0f);
+        glUniform3f(glGetUniformLocation(shader.Program, "light.diffuse"),
+            0.0f, 0.0f, 0.0f);
+        glUniform3f(glGetUniformLocation(shader.Program, "light.specular"),
+            0.0f, 0.0f, 0.0f);
+
+        glUniform3f(glGetUniformLocation(shader.Program, "material.ambient"),
+            1.0f, 1.0f, 1.0f);
+        glUniform3f(glGetUniformLocation(shader.Program, "material.diffuse"),
+            0.0f, 0.0f, 0.0f);
+        glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),
+            0.0f, 0.0f, 0.0f);
+        glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"),
+            32.0f);
+
+        // SOL
+        glm::mat4 modelSol(1.0f);
+
+        modelSol = glm::translate(modelSol, posicionSol);
+        modelSol = glm::rotate(modelSol, rot, glm::vec3(0.0f, 0.0f, 1.0f));
+        modelSol = glm::scale(modelSol, glm::vec3(escalaAstros));
+
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"),
+            1, GL_FALSE, glm::value_ptr(modelSol));
+
+        sol.Draw(shader);
+
+        // LUNA
+        glm::mat4 modelLuna(1.0f);
+
+        modelLuna = glm::translate(modelLuna, posicionLuna);
+        modelLuna = glm::rotate(modelLuna, rot, glm::vec3(0.0f, 0.0f, 1.0f));
+        modelLuna = glm::scale(modelLuna, glm::vec3(escalaAstros));
+
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"),
+            1, GL_FALSE, glm::value_ptr(modelLuna));
+
+        luna.Draw(shader);
+
+        // FINALIZAR EL FOTOGRAMA
+        glBindVertexArray(0);
+
+        glfwSwapBuffers(window);
+    }
+
+    // LIBERAR RECURSOS
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+
+    glfwTerminate();
+
+    return EXIT_SUCCESS;
 }
 
 void DoMovement()
 {
-	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP])    camera.ProcessKeyboard(FORWARD, deltaTime);
-	if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN])  camera.ProcessKeyboard(BACKWARD, deltaTime);
-	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT])  camera.ProcessKeyboard(LEFT, deltaTime);
-	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) camera.ProcessKeyboard(RIGHT, deltaTime);
+    // MOVIMIENTO DE LA CAMARA
+    if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP])
+        camera.ProcessKeyboard(FORWARD, deltaTime);
 
-	// Mover la lámpara
-	float v = 2.0f * deltaTime;
-	if (keys[GLFW_KEY_I]) lightPos.z -= v;
-	if (keys[GLFW_KEY_K]) lightPos.z += v;
-	if (keys[GLFW_KEY_J]) lightPos.x -= v;
-	if (keys[GLFW_KEY_L]) lightPos.x += v;
-	if (keys[GLFW_KEY_U]) lightPos.y += v;
-	if (keys[GLFW_KEY_O]) lightPos.y -= v;
+    if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN])
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
+
+    if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT])
+        camera.ProcessKeyboard(LEFT, deltaTime);
+
+    if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT])
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+
+    // ANIMACION Y CAMBIO DE ILUMINACION
+    if (activanim)
+    {
+        // Movimiento antihorario.
+        rot += velocidadAngular * deltaTime;
+
+        // Mantener el angulo dentro de [0, 2 PI).
+        if (rot >= glm::two_pi<float>())
+        {
+            rot = std::fmod(rot, glm::two_pi<float>());
+        }
+    }
+
+    // Sol arriba del horizonte (0 a 180 grados): luz del Sol.
+    // Luna arriba del horizonte (180 a 360 grados): luz de la Luna.
+    // Se evalua siempre para que la luz sea correcta aunque la animacion este detenida.
+    luzActiva = (rot < glm::pi<float>()) ? 1 : 2;
 }
 
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode)
+// CALLBACK DEL TECLADO
+void KeyCallback(
+    GLFWwindow* window,
+    int key,
+    int scancode,
+    int action,
+    int mode
+)
 {
-	if (GLFW_KEY_ESCAPE == key && GLFW_PRESS == action)
-		glfwSetWindowShouldClose(window, GL_TRUE);
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    }
 
-	if (action == GLFW_PRESS)
-	{
-		if (key == GLFW_KEY_R) autoRotate = !autoRotate;
-		if (key == GLFW_KEY_SPACE) animateLightColor = !animateLightColor;
-		if (key >= GLFW_KEY_1 && key <= GLFW_KEY_3)
-		{
-			currentMaterial = key - GLFW_KEY_1;
-			std::cout << "Material: " << materials[currentMaterial].name << std::endl;
-		}
-	}
+    if (key >= 0 && key < 1024)
+    {
+        if (action == GLFW_PRESS)
+        {
+            keys[key] = true;
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            keys[key] = false;
+        }
+    }
 
-	if (key >= 0 && key < 1024)
-	{
-		if (action == GLFW_PRESS)        keys[key] = true;
-		else if (action == GLFW_RELEASE) keys[key] = false;
-	}
+    // R inicia o detiene la animacion.
+    if (key == GLFW_KEY_R && action == GLFW_PRESS)
+    {
+        activanim = !activanim;
+    }
 }
 
-void MouseCallback(GLFWwindow *window, double xPos, double yPos)
+// CALLBACK DEL MOUSE
+void MouseCallback(
+    GLFWwindow* window,
+    double xPos,
+    double yPos
+)
 {
-	if (firstMouse)
-	{
-		lastX = (GLfloat)xPos;
-		lastY = (GLfloat)yPos;
-		firstMouse = false;
-	}
+    if (firstMouse)
+    {
+        lastX = (GLfloat)xPos;
+        lastY = (GLfloat)yPos;
 
-	GLfloat xOffset = (GLfloat)xPos - lastX;
-	GLfloat yOffset = lastY - (GLfloat)yPos;
+        firstMouse = false;
+    }
 
-	lastX = (GLfloat)xPos;
-	lastY = (GLfloat)yPos;
+    GLfloat xOffset = (GLfloat)xPos - lastX;
+    GLfloat yOffset = lastY - (GLfloat)yPos;
 
-	camera.ProcessMouseMovement(xOffset, yOffset);
+    lastX = (GLfloat)xPos;
+    lastY = (GLfloat)yPos;
+
+    camera.ProcessMouseMovement(xOffset, yOffset);
 }

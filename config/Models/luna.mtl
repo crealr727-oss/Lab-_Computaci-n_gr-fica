@@ -1,0 +1,10 @@
+# Material de la Luna
+newmtl luna_mat
+Ka 0.10 0.10 0.10
+Kd 1.00 1.00 1.00
+Ks 0.03 0.03 0.03
+Ns 8.0
+d 1.0
+illum 2
+map_Kd luna_textura.png
+map_Bump luna_bump.png
