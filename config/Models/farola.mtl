@@ -1,0 +1,8 @@
+newmtl farola_mat
+Ns 48
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.30 0.30 0.30
+d 1
+illum 2
+map_Kd farola_textura.png

@@ -1,0 +1,8 @@
+newmtl calle_mat
+Ns 16
+Ka 1 1 1
+Kd 1 1 1
+Ks 0.08 0.08 0.08
+d 1
+illum 2
+map_Kd calle_textura.png
