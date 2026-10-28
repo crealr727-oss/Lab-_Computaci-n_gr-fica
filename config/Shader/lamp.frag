@@ -1,11 +1,7 @@
 #version 330 core
-out vec4 FragColor;
-
-uniform vec3 lightColor;   // color actual de la luz puntual (cian en el video)
-  
-
+out vec4 color;
 
 void main()
 {
-     FragColor = vec4(lightColor, 1.0f);
+    color = vec4(1.0f);
 }
